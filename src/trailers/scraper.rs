@@ -15,6 +15,7 @@ use std::io::{Read, Write};
 use std::string::ToString;
 use std::sync::Arc;
 use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 use tokio::sync::Semaphore;
 use crate::config::config::AppConfig;
 
@@ -63,7 +64,7 @@ pub async fn scan_and_refresh_trailers(app_config: &Arc<AppConfig>) -> Result<()
         .build()?);
 
     let semaphore = Arc::new(Semaphore::new(app_config.threads));
-    let tasks = FuturesUnordered::new();
+    let mut tasks = FuturesUnordered::new();
 
     for entry in files {
         let permit = semaphore.clone().acquire_owned().await?;
@@ -100,6 +101,12 @@ pub async fn scan_and_refresh_trailers(app_config: &Arc<AppConfig>) -> Result<()
                 }
             }
         }));
+    }
+
+    while let Some(res) = tasks.next().await {
+        if let Err(e) = res {
+            error!("A task panicked or failed: {:?}", e);
+        }
     }
 
     Ok(())

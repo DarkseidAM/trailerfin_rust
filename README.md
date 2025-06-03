@@ -26,6 +26,11 @@ TRAILERFIN_THREADS: "4"
 # Optional, Defaults to '/mnt/plex'
 TRAILERFIN_SCAN_PATH: "/data"
 
+# The path to the cache directory where the local embedded db is stored.
+# Optional, Defaults to '/config'
+# The cache is currently only used to store a lookup of tmdb to imdb ids to reduce the need to requery for them.
+TRAILERFIN_CACHE_PATH: "/config"
+
 # The useragent to use when fetching trailers.
 # Optional, Defaults to 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0'.
 TRAILERFIN_USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0"
@@ -42,6 +47,33 @@ TRAILERFIN_SHOULD_SCHEDULE: "true"
 # Optional, Required if TRAILERFIN_SHOULD_SCHEDULE is true, Defaults to 'None'
 # Cron format for scheduling the trailer generation, 6 fields: seconds, minutes, hours, day of month, month, day of week
 TRAILERFIN_SCHEDULE: "0 * * * * *"
+
+# The data source to use for fetching trailers.
+# Optional, Defaults to 'imdb'. Can be 'tmdb' or 'imdb'
+# Note: If you use 'tmdb', you must provide a valid TMDB API key in TRAILERFIN_TMDB_API_KEY.
+TRAILERFIN_DATA_SOURCE: "imdb"
+
+# The TMDB API key to use if TRAILERFIN_DATA_SOURCE is set to 'tmdb'.
+# Optional, Required if TRAILERFIN_DATA_SOURCE is 'tmdb', Defaults to 'None'
+# This is used to look up the external imdb ID for the movie or TV show.
+# This data is cached locally in the TRAILERFIN_CACHE_PATH directory.
+TRAILERFIN_TMDB_API_KEY: "69blahblahlolblah420"
+
+# Sets the internal rate limit for requests through the imdb client.
+# Optional, Defaults to '30/minute'
+TRAILERFIN_IMDB_RATE_LIMIT: "30/minute"
+
+# Sets the internal rate limit for requests through the tmdb client.
+# Optional, Defaults to '50/second'
+TRAILERFIN_TMDB_RATE_LIMIT: "50/second"
+
+# The movie folders to maintain trailers for. This is relative to TRAILERFIN_SCAN_PATH.
+# Required if you want movie trailers, Defaults to 'None'
+TRAILERFIN_MOVIE_FOLDERS: "Movies,Movies 4k"
+                            
+# The TV folders to maintain trailers for. This is relative to TRAILERFIN_SCAN_PATH.
+# Required if you want TV trailers, Defaults to 'None'
+TRAILERFIN_TV_FOLDERS: "TV Shows"
 ```
 
 ## Docker
@@ -68,7 +100,13 @@ services:
       TRAILERFIN_THREADS: "4"
       TRAILERFIN_SHOULD_SCHEDULE: "true"
       TRAILERFIN_SCHEDULE: "0 0 0 * * *" # Midnight nightly.
+      TRAILERFIN_MOVIE_FOLDERS: "Movies,Movies 4k"
+      TRAILERFIN_TV_FOLDERS: "TV Shows"
     restart: always
     volumes:
       - /mnt/plex:/mnt/plex:rshared
+      - config:/config
+
+volumes:
+  config:
 ```

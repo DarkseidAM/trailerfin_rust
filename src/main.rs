@@ -1,11 +1,11 @@
-use crate::config::config::load_config;
-use crate::trailers::scraper::scan_and_refresh_trailers;
-use tracing::info;
+use std::sync::Arc;
+use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
-
-mod config;
-mod trailers;
-mod scheduler;
+use trailerfin_rust::caching::initialize_caching;
+use trailerfin_rust::configuration::configuration_provider::{AppConfig, ConfigurationProvider};
+use trailerfin_rust::request_clients::initialize_request_clients;
+use trailerfin_rust::schedulers::{get_scraping_scheduler, initialize_schedulers};
+use trailerfin_rust::scrapers::{get_scraper, initialize_scrapers};
 
 fn init_tracing() {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
@@ -16,16 +16,28 @@ fn init_tracing() {
 async fn main() {
     init_tracing();
 
-    let app_config = load_config().expect("Failed to load configuration");
+    let app_config = ConfigurationProvider::load_config().expect("Failed to load configuration");
+
+    initialize_services(&app_config);
 
     if app_config.should_schedule {
         info!("Starting in scheduled mode...");
-        scheduler::schedule::start_scheduler(app_config)
+        get_scraping_scheduler()
+            .start_scheduler(app_config)
             .await
             .expect("Failed to start scheduler");
     } else {
         info!("Scheduling disabled: Running Once...");
-        scan_and_refresh_trailers(&app_config).await
+        get_scraper()
+            .scan_and_refresh_trailers(&app_config).await
             .expect("Failed to scan and refresh trailers");
     }
+}
+
+fn initialize_services(app_config: &Arc<AppConfig>) {
+    initialize_caching(app_config.clone());
+    initialize_request_clients(app_config.clone());
+    initialize_scrapers(app_config.clone());
+    initialize_schedulers();
+    debug!("Services initialized successfully");
 }

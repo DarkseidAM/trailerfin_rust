@@ -43,3 +43,32 @@ TRAILERFIN_SHOULD_SCHEDULE: "true"
 # Cron format for scheduling the trailer generation, 6 fields: seconds, minutes, hours, day of month, month, day of week
 TRAILERFIN_SCHEDULE: "0 * * * * *"
 ```
+
+## Docker
+
+A container for this can be found in the repository [here](https://github.com/iPromKnight/containers/tree/main/apps/trailerfin_rust) and can be pulled from my github packages feed [here](https://github.com/users/iPromKnight/packages/container/package/trailerfin_rust)
+
+A distroless docker container can be found: `ghcr.io/ipromknight/trailerfin_rust:rolling`
+
+You can pull the image with:
+```bash
+docker pull ghcr.io/ipromknight/trailerfin_rust:rolling
+```
+
+This Image supports AMD64 and ARM64.
+
+## Docker Compose
+
+```yaml
+services:
+  trailerfin_rust:
+    container_name: trailerfin_rust
+    image: ghcr.io/ipromknight/trailerfin_rust:rolling
+    environment:
+      TRAILERFIN_THREADS: "4"
+      TRAILERFIN_SHOULD_SCHEDULE: "true"
+      TRAILERFIN_SCHEDULE: "0 0 0 * * *" # Midnight nightly.
+    restart: always
+    volumes:
+      - /mnt/plex:/mnt/plex:rshared
+```

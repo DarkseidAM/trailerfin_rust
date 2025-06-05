@@ -4,7 +4,7 @@ Trailerfin is a Rust-based tool designed to scan directories for IMDb IDs and up
 This is a rewrite of the original [Trailerfin](https://github.com/Pukabyte/trailerfin) by [Pukabyte](https://github.com/Pukabyte).
 
 ## Features
-* Scans directories for IMDb IDs and updates trailer links
+* Scans directories for IMDb IDs or TMDb IDs and updates trailer links
 * Fetches the latest trailer or video from IMDb
 * Supports scheduled automatic refreshes
 * Configurable via environment variables
@@ -13,7 +13,8 @@ This is a rewrite of the original [Trailerfin](https://github.com/Pukabyte/trail
 * Written in rust for performance and safety
 
 ## Requirements
-* IMDb IDs in your media folder structure
+* IMDb IDs in your media folder structure, or
+  TMDB IDs in your media folder structure
 
 ## Configuration via Env Variables
 

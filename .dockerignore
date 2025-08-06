@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Rust
+target/
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+LICENSE.md
+
+# CI/CD
+.github/
+
+# Tests
+tests/
+
+# Temporary files
+*.tmp
+*.log
+
+# Docker
+Dockerfile*
+.dockerignore

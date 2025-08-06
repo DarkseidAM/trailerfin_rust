@@ -89,34 +89,72 @@ TRAILERFIN_TMDB_ID_REGEX: "{tmdb-(\\d+)}"
 
 ## Docker
 
-A container for this can be found in the repository [here](https://github.com/iPromKnight/containers/tree/main/apps/trailerfin_rust) and can be pulled from my github packages feed [here](https://github.com/users/iPromKnight/packages/container/package/trailerfin_rust)
+### Using Pre-built Images
 
-A distroless docker container can be found: `ghcr.io/ipromknight/trailerfin_rust:rolling`
+The application is available as a Docker image from GitHub Container Registry:
 
-You can pull the image with:
 ```bash
-docker pull ghcr.io/ipromknight/trailerfin_rust:rolling
+# Pull the latest version
+docker pull ghcr.io/your-username/trailerfin_rust:latest
+
+# Pull a specific version
+docker pull ghcr.io/your-username/trailerfin_rust:v1.1.0
 ```
 
-This Image supports AMD64 and ARM64.
+### Building Locally
 
-## Docker Compose
+To build the Docker image locally:
+
+```bash
+# Build the image
+docker build -t trailerfin_rust .
+
+# Run the container
+docker run -d \
+  --name trailerfin_rust \
+  -v /path/to/your/media:/mnt/plex:ro \
+  -v ./config:/config \
+  -e TRAILERFIN_MOVIE_FOLDERS="Movies,Movies 4k" \
+  -e TRAILERFIN_TV_FOLDERS="TV Shows" \
+  -e TRAILERFIN_SHOULD_SCHEDULE="true" \
+  -e TRAILERFIN_SCHEDULE="0 0 0 * * *" \
+  trailerfin_rust
+```
+
+### Using Docker Compose
+
+1. Copy the `docker-compose.yml` file to your server
+2. Update the media path in the volumes section
+3. Configure your environment variables
+4. Run:
+
+```bash
+docker-compose up -d
+```
+
+The image supports both AMD64 and ARM64 architectures.
+
+For detailed Docker setup instructions, see [DOCKER.md](DOCKER.md).
+
+## Docker Compose Example
 
 ```yaml
 services:
   trailerfin_rust:
     container_name: trailerfin_rust
-    image: ghcr.io/ipromknight/trailerfin_rust:rolling
+    image: ghcr.io/your-username/trailerfin_rust:latest
     environment:
       TRAILERFIN_THREADS: "4"
       TRAILERFIN_SHOULD_SCHEDULE: "true"
       TRAILERFIN_SCHEDULE: "0 0 0 * * *" # Midnight nightly.
       TRAILERFIN_MOVIE_FOLDERS: "Movies,Movies 4k"
       TRAILERFIN_TV_FOLDERS: "TV Shows"
+      TRAILERFIN_DATA_SOURCE: "imdb"
+      # TRAILERFIN_TMDB_API_KEY: "your-api-key"  # Required for TMDB
     restart: always
     volumes:
-      - /mnt/plex:/mnt/plex:rshared
-      - config:/config
+      - /mnt/plex:/mnt/plex:ro
+      - ./config:/config
 
 volumes:
   config:

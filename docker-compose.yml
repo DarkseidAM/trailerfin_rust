@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  trailerfin_rust:
+    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/trailerfin_rust}:latest
+    container_name: trailerfin_rust
+    environment:
+      # Basic configuration
+      TRAILERFIN_THREADS: "4"
+      TRAILERFIN_SHOULD_SCHEDULE: "true"
+      TRAILERFIN_SCHEDULE: "0 0 0 * * *" # Midnight nightly
+      
+      # Paths
+      TRAILERFIN_SCAN_PATH: "/mnt/plex"
+      TRAILERFIN_CACHE_PATH: "/config"
+      
+      # Media folders
+      TRAILERFIN_MOVIE_FOLDERS: "Movies,Movies 4k"
+      TRAILERFIN_TV_FOLDERS: "TV Shows"
+      
+      # Data source (choose one)
+      TRAILERFIN_DATA_SOURCE: "imdb"  # or "tmdb"
+      # TRAILERFIN_TMDB_API_KEY: "your-tmdb-api-key"  # Required if using TMDB
+      
+      # Optional: Custom regex patterns
+      # TRAILERFIN_IMDB_ID_REGEX: "\\[imdb-(tt\\d+)\\]"
+      # TRAILERFIN_TMDB_ID_REGEX: "\\[tmdb-(\\d+)\\]"
+      
+      # Rate limits
+      TRAILERFIN_IMDB_RATE_LIMIT: "30/minute"
+      TRAILERFIN_TMDB_RATE_LIMIT: "50/second"
+      
+      # Other settings
+      TRAILERFIN_VIDEO_FILENAME: "video1.strm"
+      TRAILERFIN_USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0"
+    
+    volumes:
+      - /path/to/your/media:/mnt/plex:ro  # Replace with your media path
+      - ./config:/config  # Local config directory for cache
+    
+    restart: unless-stopped
+    
+    # Optional: Override user (uncomment and adjust as needed)
+    # user: "1000:1000"  # Run as specific user/group
+    # user: "root"       # Run as root (not recommended for production)
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "ps", "aux", "|", "grep", "trailerfin_rust", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  config:
+    driver: local

@@ -1,0 +1,66 @@
+# Docker Compose Examples for Trailerfin Rust
+# This file shows different user configuration options
+
+version: '3.8'
+
+services:
+  # Example 1: Default configuration (non-root user)
+  trailerfin_default:
+    image: ghcr.io/your-username/trailerfin_rust:latest
+    container_name: trailerfin_default
+    environment:
+      TRAILERFIN_MOVIE_FOLDERS: "Movies"
+      TRAILERFIN_TV_FOLDERS: "TV Shows"
+    volumes:
+      - /mnt/media:/mnt/plex:ro
+      - ./config:/config
+    restart: unless-stopped
+
+  # Example 2: Custom user matching host system
+  trailerfin_custom_user:
+    image: ghcr.io/your-username/trailerfin_rust:latest
+    container_name: trailerfin_custom_user
+    user: "1000:1000"  # Match your host user/group
+    environment:
+      TRAILERFIN_MOVIE_FOLDERS: "Movies"
+      TRAILERFIN_TV_FOLDERS: "TV Shows"
+    volumes:
+      - /mnt/media:/mnt/plex:ro
+      - ./config:/config
+    restart: unless-stopped
+
+  # Example 3: Root user (not recommended for production)
+  trailerfin_root:
+    image: ghcr.io/your-username/trailerfin_rust:latest
+    container_name: trailerfin_root
+    user: "root"
+    environment:
+      TRAILERFIN_MOVIE_FOLDERS: "Movies"
+      TRAILERFIN_TV_FOLDERS: "TV Shows"
+    volumes:
+      - /mnt/media:/mnt/plex:ro
+      - ./config:/config
+    restart: unless-stopped
+
+  # Example 4: Production setup with proper permissions
+  trailerfin_production:
+    image: ghcr.io/your-username/trailerfin_rust:latest
+    container_name: trailerfin_production
+    user: "1001:1001"  # Use the default trailerfin user
+    environment:
+      TRAILERFIN_THREADS: "4"
+      TRAILERFIN_SHOULD_SCHEDULE: "true"
+      TRAILERFIN_SCHEDULE: "0 0 0 * * *"
+      TRAILERFIN_MOVIE_FOLDERS: "Movies,Movies 4k"
+      TRAILERFIN_TV_FOLDERS: "TV Shows"
+      TRAILERFIN_DATA_SOURCE: "imdb"
+    volumes:
+      - /mnt/media:/mnt/plex:ro
+      - ./config:/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ps", "aux", "|", "grep", "trailerfin_rust", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

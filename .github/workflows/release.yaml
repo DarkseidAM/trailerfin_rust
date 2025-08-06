@@ -110,8 +110,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Output image digest
-        run: echo "Image digest: ${{ steps.build.outputs.digest }}"
+
 
   # Create GitHub release with binaries
   create-release:

@@ -57,7 +57,7 @@ pub async fn process_media_folders(
 
     for tagged_dir in all_dirs {
         let permit = semaphore.clone().acquire_owned().await?;
-        let config = Arc::clone(&app_config);
+        let config = Arc::clone(app_config);
         let service = Arc::clone(&scraper);
         let path = tagged_dir.path;
         let folder_type = tagged_dir.folder_type;
@@ -77,7 +77,7 @@ pub async fn process_media_folders(
     Ok(())
 }
 
-fn scan_tagged_subdirs(base: &PathBuf, subfolder: &str, folder_type: FolderType) -> Vec<TaggedDir> {
+fn scan_tagged_subdirs(base: &std::path::Path, subfolder: &str, folder_type: FolderType) -> Vec<TaggedDir> {
     let path = base.join(subfolder);
     if !path.exists() || !path.is_dir() {
         return vec![];

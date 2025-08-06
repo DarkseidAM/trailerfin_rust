@@ -11,8 +11,8 @@ impl RedbDatabase {
         let db = if !path.exists() {
             Database::create(path).expect("Failed to create new database file.")
         } else {
-            let db = Database::open(path).expect("Failed to open existing database file.");
-            db
+            
+            Database::open(path).expect("Failed to open existing database file.")
         };
 
         Ok(Self { db })

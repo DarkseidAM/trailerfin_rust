@@ -36,10 +36,7 @@ static PARSED_VIDEO_SELECTOR: Lazy<Selector> = Lazy::new(|| {
 pub struct ImdbTrailerScraper;
 
 
-static IMDB_ID_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"\{imdb-(tt\d+)}")
-        .expect("Failed to compile IMDB ID Regex")
-});
+// This will be replaced with configurable regex
 
 #[async_trait]
 impl TrailerScraper for ImdbTrailerScraper {
@@ -117,14 +114,14 @@ impl ImdbTrailerScraper {
             let text = el.text().collect::<String>().to_lowercase();
             if text.contains(TRAILER) {
                 if let Some(href) = el.value().attr(HREF_ATTR) {
-                    return Ok(Some(format!("{}", href)));
+                    return Ok(Some(href.to_string()));
                 }
             }
         }
 
         if let Some(el) = doc.select(&PARSED_VIDEO_SELECTOR).next() {
             if let Some(href) = el.value().attr(HREF_ATTR) {
-                return Ok(Some(format!("{}", href)));
+                return Ok(Some(href.to_string()));
             }
         }
 
@@ -138,7 +135,16 @@ impl ImdbTrailerScraper {
         config: Arc<AppConfig>,
     ) {
         if let Some(path_str) = path.to_str() {
-            if let Some(cap) = IMDB_ID_REGEX.captures(path_str) {
+            // Use configurable regex pattern
+            let regex = match Regex::new(&config.imdb_id_regex) {
+                Ok(regex) => regex,
+                Err(e) => {
+                    error!("Invalid IMDb ID regex pattern: {}", e);
+                    return;
+                }
+            };
+            
+            if let Some(cap) = regex.captures(path_str) {
                 let imdb_id = &cap[1];
                 let backdrops_path = path.join(BACKDROPS_FOLDER);
                 let strm_path = backdrops_path.join(&config.video_filename);

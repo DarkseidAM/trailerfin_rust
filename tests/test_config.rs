@@ -109,6 +109,8 @@ fn clear_env() {
             "TRAILERFIN_USER_AGENT",
             "TRAILERFIN_SHOULD_SCHEDULE",
             "TRAILERFIN_SCHEDULE",
+            "TRAILERFIN_IMDB_ID_REGEX",
+            "TRAILERFIN_TMDB_ID_REGEX",
         ] {
             env::remove_var(key);
         }
@@ -136,4 +138,60 @@ fn setup_empty_dir() -> tempfile::TempDir {
     }
 
     temp
+}
+
+#[test]
+#[serial_test::serial]
+fn test_invalid_imdb_regex_fails() {
+    clear_env();
+    let _temp = setup_empty_dir();
+    unsafe {
+        env::set_var("TRAILERFIN_VIDEO_FILENAME", "test.strm");
+        env::set_var("TRAILERFIN_USER_AGENT", "TestAgent");
+        env::set_var("TRAILERFIN_SHOULD_SCHEDULE", "false");
+        env::set_var("TRAILERFIN_IMDB_ID_REGEX", "[invalid regex");
+    }
+
+    let result = ConfigurationProvider::load_config();
+    assert!(result.is_err());
+    clear_env();
+}
+
+#[test]
+#[serial_test::serial]
+fn test_invalid_tmdb_regex_fails() {
+    clear_env();
+    let _temp = setup_empty_dir();
+    unsafe {
+        env::set_var("TRAILERFIN_VIDEO_FILENAME", "test.strm");
+        env::set_var("TRAILERFIN_USER_AGENT", "TestAgent");
+        env::set_var("TRAILERFIN_SHOULD_SCHEDULE", "false");
+        env::set_var("TRAILERFIN_TMDB_ID_REGEX", "[invalid regex");
+    }
+
+    let result = ConfigurationProvider::load_config();
+    assert!(result.is_err());
+    clear_env();
+}
+
+#[test]
+#[serial_test::serial]
+fn test_custom_regex_patterns_work() {
+    clear_env();
+    let _temp = setup_empty_dir();
+    unsafe {
+        env::set_var("TRAILERFIN_VIDEO_FILENAME", "test.strm");
+        env::set_var("TRAILERFIN_USER_AGENT", "TestAgent");
+        env::set_var("TRAILERFIN_SHOULD_SCHEDULE", "false");
+        env::set_var("TRAILERFIN_IMDB_ID_REGEX", r"\[imdb-(tt\d+)\]");
+        env::set_var("TRAILERFIN_TMDB_ID_REGEX", r"\[tmdb-(\d+)\]");
+    }
+
+    let result = ConfigurationProvider::load_config();
+    assert!(result.is_ok());
+    
+    let config = result.unwrap();
+    assert_eq!(config.imdb_id_regex, r"\[imdb-(tt\d+)\]");
+    assert_eq!(config.tmdb_id_regex, r"\[tmdb-(\d+)\]");
+    clear_env();
 }

@@ -5,6 +5,7 @@ use config::Config;
 use tracing::{info};
 use serde::de::{self, Deserializer};
 use serde::Deserialize;
+use regex::Regex;
 
 const DATASOURCES: [&str; 2] = ["IMDB", "TMDB"];
 
@@ -29,7 +30,7 @@ fn validate_path(path: &str, name: &str) -> anyhow::Result<PathBuf> {
                 path_buf
             ));
     }
-    Ok(path_buf.canonicalize().with_context(|| format!("Failed to canonicalize path for {}: {:?}", name, path_buf))?)
+    path_buf.canonicalize().with_context(|| format!("Failed to canonicalize path for {}: {:?}", name, path_buf))
 }
 
 fn deserialize_trimmed_csv<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
@@ -68,6 +69,11 @@ pub struct AppConfig {
     pub tmdb_rate_limit: String,
     pub tmdb_api_key: Option<String>,
 
+    #[serde(default)]
+    pub imdb_id_regex: String,
+    #[serde(default)]
+    pub tmdb_id_regex: String,
+
     #[serde(default, deserialize_with = "deserialize_trimmed_csv")]
     pub tv_folders: Vec<String>,
     #[serde(default, deserialize_with = "deserialize_trimmed_csv")]
@@ -89,6 +95,8 @@ impl ConfigurationProvider {
             .set_default("data_source", "IMDB")?
             .set_default("imdb_rate_limit", "30/minute")?
             .set_default("tmdb_rate_limit", "50/second")?
+            .set_default("imdb_id_regex", r"\{imdb-(tt\d+)}")?
+            .set_default("tmdb_id_regex", r"\{tmdb-(\d+)}")?
             .add_source(
                 config::Environment::with_prefix("TRAILERFIN")
             )
@@ -132,6 +140,22 @@ impl ConfigurationProvider {
 
         if config.cache_path.trim().is_empty() {
             return Err(anyhow!("TRAILERFIN_CACHE_PATH must be set and cannot be empty"));
+        }
+
+        // Validate regex patterns
+        if config.imdb_id_regex.trim().is_empty() {
+            return Err(anyhow!("TRAILERFIN_IMDB_ID_REGEX must be set and cannot be empty"));
+        }
+        if config.tmdb_id_regex.trim().is_empty() {
+            return Err(anyhow!("TRAILERFIN_TMDB_ID_REGEX must be set and cannot be empty"));
+        }
+
+        // Test regex compilation
+        if let Err(e) = Regex::new(&config.imdb_id_regex) {
+            return Err(anyhow!("Invalid TRAILERFIN_IMDB_ID_REGEX pattern: {}", e));
+        }
+        if let Err(e) = Regex::new(&config.tmdb_id_regex) {
+            return Err(anyhow!("Invalid TRAILERFIN_TMDB_ID_REGEX pattern: {}", e));
         }
 
         _ = validate_path(&config.scan_path, "TRAILERFIN_SCAN_PATH")?;

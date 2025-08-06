@@ -20,6 +20,8 @@ async fn test_create_strm_file_writes_correct_url() {
         imdb_rate_limit: "30/minute".to_string(),
         tmdb_rate_limit: "50/second".to_string(),
         tmdb_api_key: Some("ham-and-cheese-sandwich".to_string()),
+        imdb_id_regex: r"\{imdb-(tt\d+)}".to_string(),
+        tmdb_id_regex: r"\{tmdb-(\d+)}".to_string(),
         tv_folders: vec!["shows", "kids tv"].iter().map(|s| s.to_string()).collect(),
         movie_folders: vec!["movies", "kids"].iter().map(|s| s.to_string()).collect(),
     };
@@ -54,6 +56,8 @@ async fn test_overwrite_existing_strm_file() {
         imdb_rate_limit: "30/minute".to_string(),
         tmdb_rate_limit: "50/second".to_string(),
         tmdb_api_key: Some("ham-and-cheese-sandwich".to_string()),
+        imdb_id_regex: r"\{imdb-(tt\d+)}".to_string(),
+        tmdb_id_regex: r"\{tmdb-(\d+)}".to_string(),
         tv_folders: vec!["shows", "kids tv"].iter().map(|s| s.to_string()).collect(),
         movie_folders: vec!["movies", "kids"].iter().map(|s| s.to_string()).collect(),
     };

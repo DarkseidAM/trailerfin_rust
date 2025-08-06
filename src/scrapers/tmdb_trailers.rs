@@ -5,8 +5,8 @@ use anyhow::Result;
 use regex::Regex;
 use std::sync::Arc;
 use async_trait::async_trait;
-use once_cell::sync::{Lazy};
-use tracing::{info, warn};
+
+use tracing::{error, info, warn};
 use crate::caching::tmdb_to_imdb_cache::TmdbToImdbCache;
 use crate::configuration::configuration_provider::AppConfig;
 use crate::request_clients::get_tmdb_client;
@@ -20,10 +20,7 @@ pub struct TmdbTrailerScraper {
     pub tmdb_to_imdb_cache: Arc<TmdbToImdbCache>,
 }
 
-static TMDB_ID_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"\{tmdb-(\d+)}")
-        .expect("Failed to compile TMDB ID Regex")
-});
+// This will be replaced with configurable regex
 
 #[async_trait]
 impl TrailerScraper for TmdbTrailerScraper {
@@ -48,7 +45,16 @@ impl TmdbTrailerScraper {
         folder_type: FolderType,
     ) {
         if let Some(path_str) = path.to_str() {
-            if let Some(cap) = (&*TMDB_ID_REGEX).captures(path_str) {
+            // Use configurable regex pattern
+            let regex = match Regex::new(&config.tmdb_id_regex) {
+                Ok(regex) => regex,
+                Err(e) => {
+                    error!("Invalid TMDB ID regex pattern: {}", e);
+                    return;
+                }
+            };
+            
+            if let Some(cap) = regex.captures(path_str) {
                 let tmdb_id = &cap[1];
                 let backdrops_path = path.join(BACKDROPS_FOLDER);
                 let strm_path = backdrops_path.join(&config.video_filename);

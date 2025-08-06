@@ -75,6 +75,16 @@ TRAILERFIN_MOVIE_FOLDERS: "Movies,Movies 4k"
 # The TV folders to maintain trailers for. This is relative to TRAILERFIN_SCAN_PATH.
 # Required if you want TV trailers, Defaults to 'None'
 TRAILERFIN_TV_FOLDERS: "TV Shows"
+
+# The regex pattern to match IMDb IDs in folder names.
+# Optional, Defaults to '{imdb-(tt\d+)}'
+# Must contain a capture group for the IMDb ID (e.g., (tt\d+))
+TRAILERFIN_IMDB_ID_REGEX: "{imdb-(tt\\d+)}"
+
+# The regex pattern to match TMDB IDs in folder names.
+# Optional, Defaults to '{tmdb-(\d+)}'
+# Must contain a capture group for the TMDB ID (e.g., (\d+))
+TRAILERFIN_TMDB_ID_REGEX: "{tmdb-(\\d+)}"
 ```
 
 ## Docker

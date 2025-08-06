@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   trailerfin_rust:
-    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/trailerfin_rust}:latest
+    image: ghcr.io/darkseidam/trailerfin_rust}:latest
     container_name: trailerfin_rust
     environment:
       # Basic configuration

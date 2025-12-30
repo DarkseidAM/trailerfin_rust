@@ -111,7 +111,6 @@ jobs:
           cache-to: type=gha,mode=max
 
 
-
   # Create GitHub release with binaries
   create-release:
     needs: [build-binaries, build-docker]

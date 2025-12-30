@@ -1,15 +1,27 @@
 use std::sync::Arc;
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::time::FormatTime;
 use trailerfin_rust::caching::initialize_caching;
 use trailerfin_rust::configuration::configuration_provider::{AppConfig, ConfigurationProvider};
 use trailerfin_rust::request_clients::initialize_request_clients;
 use trailerfin_rust::schedulers::{get_scraping_scheduler, initialize_schedulers};
 use trailerfin_rust::scrapers::{get_scraper, initialize_scrapers};
 
+struct LocalTimer;
+
+impl FormatTime for LocalTimer {
+    fn format_time(&self, w: &mut tracing_subscriber::fmt::format::Writer<'_>) -> std::fmt::Result {
+        write!(w, "{}", chrono::Local::now().format("%Y-%m-%dT%H:%M:%S%.3f%:z"))
+    }
+}
+
 fn init_tracing() {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    tracing_subscriber::fmt()
+        .with_timer(LocalTimer)
+        .with_env_filter(filter)
+        .init();
 }
 
 #[tokio::main]

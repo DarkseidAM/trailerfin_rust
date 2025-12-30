@@ -13,7 +13,7 @@ env:
 jobs:
   # Build binaries for multiple platforms
   build-binaries:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       matrix:
         target:

@@ -15,7 +15,7 @@ jobs:
   build-binaries:
     runs-on: self-hosted
     container:
-      image: ubuntu:22.04
+      image: rust:1.83-slim
     strategy:
       matrix:
         target:
@@ -26,58 +26,65 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: Cache cargo registry and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+
+      - name: Install dependencies and Rust target
         run: |
           apt-get update
-          apt-get install -y curl build-essential
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-      - name: Install Rust target
-        run: |
-          . "$HOME/.cargo/env"
+          apt-get install -y musl-tools gcc-aarch64-linux-gnu
           rustup target add ${{ matrix.target }}
 
-      - name: Install musl tools and cross-compiler
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+
+      - name: Configure Rust compilation
         run: |
-          apt-get install -y musl-tools gcc-aarch64-linux-gnu
+          mkdir -p ~/.cargo
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
 
       - name: Configure linker (only for aarch64)
         if: matrix.target == 'aarch64-unknown-linux-musl'
         run: |
-          mkdir -p ~/.cargo
           echo '[target.aarch64-unknown-linux-musl]' >> ~/.cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ~/.cargo/config.toml
 
       - name: Run Tests
         if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: |
-          . "$HOME/.cargo/env"
-          RUST_TEST_THREADS=1 cargo test --target=${{ matrix.target }}
+        run: RUST_TEST_THREADS=1 cargo test --target=${{ matrix.target }}
 
       - name: Build release binary
-        run: |
-          . "$HOME/.cargo/env"
-          cargo build --release --target=${{ matrix.target }} --locked
+        run: cargo build --release --target=${{ matrix.target }} --locked
 
       - name: Package as tar.gz
         run: |
-          mkdir -p dist
           BIN=target/${{ matrix.target }}/release/trailerfin_rust
           if [ ! -f "$BIN" ]; then
             echo "❌ Binary not found: $BIN"
             exit 1
           fi
-          cp "$BIN" dist/
-          cd dist
-          chmod +x ./trailerfin_rust
-          tar -czf trailerfin_rust-${{ matrix.target }}.tar.gz trailerfin_rust
-          cd ..
+          strip "$BIN" 2>/dev/null || true
+          mkdir -p dist
+          cp "$BIN" dist/trailerfin_rust
+          chmod +x dist/trailerfin_rust
+          tar -czf trailerfin_rust-${{ matrix.target }}.tar.gz -C dist trailerfin_rust
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: trailerfin_rust-${{ matrix.target }}
-          path: dist/trailerfin_rust-${{ matrix.target }}.tar.gz
+          path: trailerfin_rust-${{ matrix.target }}.tar.gz
+          compression-level: 0
 
   # Build and push Docker images
   build-docker:
@@ -132,19 +139,16 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          path: dist
-
-      - name: Flatten artifacts
-        run: |
-          mkdir -p upload
-          find dist -name '*.tar.gz' -exec mv {} upload/ \;
+          path: artifacts
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: upload/*.tar.gz
+          files: artifacts/*.tar.gz
           body: |
             ## 🚀 Release ${{ github.ref_name }}
             

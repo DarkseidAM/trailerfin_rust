@@ -1,34 +1,51 @@
 # Git
-.git
+.git/
 .gitignore
+.gitattributes
 
 # Rust
 target/
+**/*.rs.bk
+*.pdb
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
+.editorconfig
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Documentation
 README.md
 LICENSE.md
+CHANGELOG.md
+docs/
 
 # CI/CD
 .github/
+.gitlab-ci.yml
+.travis.yml
 
 # Tests
 tests/
+benches/
+examples/
 
 # Temporary files
 *.tmp
 *.log
+*.bak
 
 # Docker
 Dockerfile*
 .dockerignore
+docker-compose*.yml
+
+# Scripts
+scripts/

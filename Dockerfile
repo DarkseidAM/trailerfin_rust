@@ -1,5 +1,5 @@
 # Multi-stage build for trailerfin_rust
-FROM rust:1.87.0-alpine AS builder
+FROM rust:1.83-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache musl-dev
@@ -7,41 +7,45 @@ RUN apk add --no-cache musl-dev
 # Set working directory
 WORKDIR /app
 
-# Copy manifests
+# Copy manifests first for better layer caching
 COPY Cargo.toml Cargo.lock ./
 COPY rust-toolchain.toml ./
 
-# Create a dummy main.rs to build dependencies
+# Create dummy src to cache dependencies
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 
-# Build dependencies only
-RUN cargo build --release
+# Build dependencies (cached unless Cargo.lock changes)
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    cargo build --release && \
+    rm -rf target/release/deps/trailerfin_rust*
 
-# Remove dummy main.rs and copy real source code
-RUN rm src/main.rs
+# Copy source code
 COPY src/ ./src/
 
-# Build the application
-RUN cargo build --release
+# Build application with dependency cache
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    cargo build --release --locked && \
+    strip target/release/trailerfin_rust && \
+    cp target/release/trailerfin_rust /tmp/trailerfin_rust
 
-# Runtime stage
-FROM alpine:latest
+# Runtime stage - use specific version for reproducibility
+FROM alpine:3.21
 
-# Install runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata
-
-# Create non-root user (optional - can be overridden in docker-compose)
-RUN addgroup -g 1001 -S trailerfin && \
-    adduser -u 1001 -S trailerfin -G trailerfin
+# Install runtime dependencies in a single layer
+RUN apk add --no-cache ca-certificates tzdata && \
+    addgroup -g 1001 -S trailerfin && \
+    adduser -u 1001 -S trailerfin -G trailerfin && \
+    mkdir -p /config /mnt/plex
 
 # Set working directory
 WORKDIR /app
 
-# Copy binary from builder stage
-COPY --from=builder /app/target/release/trailerfin_rust /app/trailerfin_rust
-
-# Create necessary directories with flexible ownership
-RUN mkdir -p /config /mnt/plex
+# Copy stripped binary from builder stage
+COPY --from=builder /tmp/trailerfin_rust /app/trailerfin_rust
 
 # Set default user (can be overridden)
 USER trailerfin

@@ -44,15 +44,6 @@ jobs:
           apt-get install -y musl-tools gcc-aarch64-linux-gnu
           rustup target add ${{ matrix.target }}
 
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.5
-
-      - name: Configure Rust compilation
-        run: |
-          mkdir -p ~/.cargo
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-
       - name: Configure linker (only for aarch64)
         if: matrix.target == 'aarch64-unknown-linux-musl'
         run: |

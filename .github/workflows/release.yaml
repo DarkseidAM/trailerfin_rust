@@ -14,6 +14,8 @@ jobs:
   # Build binaries for multiple platforms
   build-binaries:
     runs-on: self-hosted
+    container:
+      image: ubuntu:22.04
     strategy:
       matrix:
         target:
@@ -24,13 +26,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Rust
+        run: |
+          apt-get update
+          apt-get install -y curl build-essential
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Install Rust target
-        run: rustup target add ${{ matrix.target }}
+        run: |
+          . "$HOME/.cargo/env"
+          rustup target add ${{ matrix.target }}
 
       - name: Install musl tools and cross-compiler
         run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
+          apt-get install -y musl-tools gcc-aarch64-linux-gnu
 
       - name: Configure linker (only for aarch64)
         if: matrix.target == 'aarch64-unknown-linux-musl'
@@ -41,10 +51,14 @@ jobs:
 
       - name: Run Tests
         if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: RUST_TEST_THREADS=1 cargo test --target=${{ matrix.target }}
+        run: |
+          . "$HOME/.cargo/env"
+          RUST_TEST_THREADS=1 cargo test --target=${{ matrix.target }}
 
       - name: Build release binary
-        run: cargo build --release --target=${{ matrix.target }} --locked
+        run: |
+          . "$HOME/.cargo/env"
+          cargo build --release --target=${{ matrix.target }} --locked
 
       - name: Package as tar.gz
         run: |
@@ -67,7 +81,7 @@ jobs:
 
   # Build and push Docker images
   build-docker:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -114,7 +128,7 @@ jobs:
   # Create GitHub release with binaries
   create-release:
     needs: [build-binaries, build-docker]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: startsWith(github.ref, 'refs/tags/')
     
     steps:

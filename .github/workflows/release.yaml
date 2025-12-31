@@ -77,6 +77,11 @@ jobs:
           path: trailerfin_rust-${{ matrix.target }}.tar.gz
           compression-level: 0
 
+      - name: Fix permissions
+        if: always()
+        run: |
+          chown -R $(stat -c "%u:%g" .) .
+
   # Build and push Docker images
   build-docker:
     runs-on: self-hosted
